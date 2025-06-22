@@ -1,3 +1,4 @@
 src/notes
+src/secrets.json
 **/__pycache__/
 venv

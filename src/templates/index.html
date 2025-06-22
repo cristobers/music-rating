@@ -1,0 +1,15 @@
+<!DOCTYPE=html>
+    <head>
+
+    </head>
+    <body>
+        {% if current_user.is_authenticated %}
+            <p> Hello {{current_user.username}} </p>
+            <p> Hello {{current_user.id}} </p>
+            <p> Hello {{current_user.access_token}} </p>
+            <a class="btn" href="{{ url_for('logout') }}">logout</a>
+        {% else %}
+            <a class="btn" href="{{ url_for('oauth2_authorize', provider='discord') }}">login with discord</a>
+        {% endif %}
+    </body>
+</html>
