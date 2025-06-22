@@ -20,29 +20,46 @@ fernet = Fernet(key)
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), nullable=False)
+    id            = db.Column(db.String, primary_key=True)
+    username      = db.Column(db.String(64), nullable=False)
     access_token  = db.Column(db.LargeBinary, nullable=False)
     refresh_token = db.Column(db.LargeBinary, nullable=False)
     expr_time     = db.Column(db.Integer, nullable=False)
 
+class Album(db.Model):
+    __tablename__ = 'albums'
+    title  = db.Column(db.String(512), primary_key=True) # Title of album
+    artist = db.Column(db.String(512), nullable=False)   # Artist name
+    date   = db.Column(db.String(512), nullable=False)   # Date added
+
+class Rating(db.Model):
+    __tablename__ = 'ratings'
+    id           = db.Column(db.Integer, primary_key=True)
+    album_title  = db.Column(db.String(512), db.ForeignKey("albums.title"))
+    album_rater  = db.Column(db.String(512), db.ForeignKey("users.id"))
+    rating_score = db.Column(db.Integer, nullable=False)
+
 @login.user_loader
 def load_user(id):
-    return db.session.get(User, int(id))
+    return db.session.get(User, str(id))
 
 @app.route("/")
 def index():
-    return render_template("index.html")
-
-@app.route("/home")
-def home():
-    return render_template("home.html")
+    #album_amount = db.session.scalar(db.select(Album))
+    albums = Album.query.all()
+    album_amount = len(albums)
+    return render_template("index.html", albums=albums, album_amount=album_amount)
 
 @app.route("/logout")
 def logout():
     logout_user()
     flash("you've been logged out")
     return redirect(url_for("index"))
+
+@app.route("/rate_album", methods=["POST"])
+def rate_an_album():
+    print(request.form)
+    return "yeah good"
 
 @app.route('/authorize/<provider>')
 def oauth2_authorize(provider):
@@ -61,7 +78,6 @@ def oauth2_authorize(provider):
         'scope': ' '.join(provider_data['scopes']),
         'state': session['oauth2_state'],
     })
-    #print(url_for("oauth2_callback", provider=provider, _external=True))
 
     # redirect the user to the OAuth2 provider authorization URL
     return redirect(provider_data['authorize_url'] + '?' + qs)
@@ -99,9 +115,7 @@ def oauth2_callback(provider):
     }, headers={'Accept': 'application/x-www-form-urlencoded'})
     if response_tokens.status_code != 200:
         abort(401)
-    #print(response_tokens.text)
     oauth2_token = response_tokens.json().get('access_token')
-    print(oauth2_token)
     if not oauth2_token:
         abort(401)
 
@@ -110,8 +124,6 @@ def oauth2_callback(provider):
         'Authorization': 'Bearer ' + oauth2_token,
         'Accept': 'application/json',
     })
-
-    #response_json = response.json()
 
     if response.status_code != 200:
         abort(401)
@@ -125,7 +137,12 @@ def oauth2_callback(provider):
     }
 
     # find or create the user in the database
-    user = db.session.scalar(db.select(User).where(User.username == user_info["username"]))
+    user = db.session.scalar(
+               db.select(User).where(
+                   User.id == user_info["id"]
+               )
+           )
+
     if user is None:
         user = User(id=user_info["id"], 
                     username=user_info["username"],
@@ -135,6 +152,7 @@ def oauth2_callback(provider):
         )
         db.session.add(user)
         db.session.commit()
+
     # log the user in
     login_user(user)
     return redirect(url_for('index'))
