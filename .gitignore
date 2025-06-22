@@ -1,4 +1,5 @@
 src/notes
+src/instance/db.sqlite
 src/secrets.json
 **/__pycache__/
 venv
