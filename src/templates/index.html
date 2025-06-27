@@ -14,8 +14,20 @@
                 <a> Hello <b>{{ current_user.username }}</b> | </a>
                 <a class="btn" href="{{ url_for('logout') }}">logout</a>
             </div>
-            <p> There are currently {{ album_amount }} albums in the database. </p>
-            <p> You have rated 0 songs. </p>
+
+            <div>
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <ul class="flashes">
+                            {% for message in messages %}
+                                <li> {{ message }} </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <p> There are currently {{ albums|length }} albums in the database. </p>
 
             <div class="album_rating_section">
                 <form method="post" action="/rate_album">
@@ -33,6 +45,9 @@
                     <br><br>
                     <input type="submit" value="Submit">
                 </form>
+            </div>
+            <div class="your_ratings">
+                <p> You have rated {{ ratings|length }} songs. </p>
             </div>
 
 

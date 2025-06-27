@@ -2,16 +2,18 @@ import secrets, requests
 from urllib.parse import urlencode
 from cryptography.fernet import Fernet
 from flask import Flask, render_template, current_app, url_for, flash, session, \
-    request, abort, redirect 
-from flask_login import current_user, LoginManager, UserMixin, login_user, logout_user
+    request, abort, redirect, Response
+from flask_login import current_user, LoginManager, UserMixin, login_user, \
+    logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import and_, Sequence
 from config import app_setup, fer_key
 
 app = Flask(__name__)
 app = app_setup(app)
 db = SQLAlchemy(app)
 login = LoginManager(app)
-login.login_view = 'index'
+login.login_view = "index"
 
 key = fer_key
 fernet = Fernet(key)
@@ -19,7 +21,7 @@ fernet = Fernet(key)
 # https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask-in-2023
 
 class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+    __tablename__ = "users"
     id            = db.Column(db.String, primary_key=True)
     username      = db.Column(db.String(64), nullable=False)
     access_token  = db.Column(db.LargeBinary, nullable=False)
@@ -27,16 +29,17 @@ class User(UserMixin, db.Model):
     expr_time     = db.Column(db.Integer, nullable=False)
 
 class Album(db.Model):
-    __tablename__ = 'albums'
-    title  = db.Column(db.String(512), primary_key=True) # Title of album
+    __tablename__ = "albums"
+    id     = db.Column(db.Integer, Sequence("album_id_seq"), primary_key=True)
+    title  = db.Column(db.String(512), nullable=False)   # Title of album
     artist = db.Column(db.String(512), nullable=False)   # Artist name
     date   = db.Column(db.String(512), nullable=False)   # Date added
 
 class Rating(db.Model):
-    __tablename__ = 'ratings'
-    id           = db.Column(db.Integer, primary_key=True)
-    album_title  = db.Column(db.String(512), db.ForeignKey("albums.title"))
-    album_rater  = db.Column(db.String(512), db.ForeignKey("users.id"))
+    __tablename__ = "ratings"
+    id           = db.Column(db.Integer, Sequence("rating_id_seq"), primary_key=True)
+    album_id     = db.Column(db.Integer, db.ForeignKey("albums.id"), nullable=False)
+    album_rater  = db.Column(db.String(512), db.ForeignKey("users.id"), nullable=False)
     rating_score = db.Column(db.Integer, nullable=False)
 
 @login.user_loader
@@ -45,84 +48,149 @@ def load_user(id):
 
 @app.route("/")
 def index():
-    #album_amount = db.session.scalar(db.select(Album))
-    albums = Album.query.all()
-    album_amount = len(albums)
-    return render_template("index.html", albums=albums, album_amount=album_amount)
+    # Only gather albums if the user is authenticated.
+    if not current_user.is_authenticated:
+        return render_template("index.html")
+    else:
+        albums = Album.query.all()
+        ratings = db.session.execute(
+                    db.select(Rating).where(and_(
+                        Rating.album_rater == current_user.id
+                    ))).all()
+        return render_template("index.html", albums=albums, ratings=ratings)
 
 @app.route("/logout")
 def logout():
     logout_user()
-    flash("you've been logged out")
+    #flash("you've been logged out")
     return redirect(url_for("index"))
+
+@app.route("/user/<user_id>")
+@login_required
+def see_user_ratings(user_id):
+    return "meowwwwwwww!"
 
 @app.route("/rate_album", methods=["POST"])
 def rate_an_album():
-    print(request.form)
-    return "yeah good"
 
-@app.route('/authorize/<provider>')
+    if request.form == None:
+        return "Request data was empty.", 400
+
+    album, artist = request.form["album"].split("\\0")
+    # Check that the album exists
+    albums = db.session.execute(
+                db.select(Album).where(and_(
+                    Album.title  == album,
+                    Album.artist == artist
+                ))).one_or_none()
+
+    if albums == None:
+        # We didn't find the album
+        return "Couldn't find requested album in database.", 404
+
+    score_given = request.form["rating"]
+    if score_given == "":
+        # Score was empty
+        abort(400)
+
+    # TODO: If we've previously rated the album, update the entry instead of making a new one
+    prev_rated_album = db.session.execute(
+        db.select(Rating, Album).join(
+            Album, Rating.album_id == Album.id
+        ).where(and_(
+            Album.title  == album,
+            Album.artist == artist,
+            Rating.album_rater == current_user.id
+        ))
+    ).all()
+
+    if prev_rated_album == []:
+        # We havent previously rated this album, just insert it.
+        temp_rating = Rating(
+            album_id     = albums[0].id,
+            album_rater  = current_user.id,
+            rating_score = score_given
+        )
+        db.session.add(temp_rating)
+        db.session.commit()
+        flash(f"Successfully rated {album} by {artist}")
+        return redirect(url_for("index"))
+    else:
+        prev_rated_album_id = prev_rated_album[0][1].id
+        db.session.execute(
+            db.update(Rating)
+            .where(and_(
+                Rating.album_id == prev_rated_album_id,
+                Rating.album_rater == current_user.id
+            ))
+            .values(rating_score=score_given)
+        )
+        db.session.commit()
+        flash(f"Updated your score for {album} by {artist}")
+        return redirect(url_for("index"))
+
+@app.route("/authorize/<provider>")
 def oauth2_authorize(provider):
     user_not_anonymous()
      
-    provider_data = current_app.config['OAUTH2_PROVIDERS'].get(provider)
+    provider_data = current_app.config["OAUTH2_PROVIDERS"].get(provider)
     if provider_data is None:
         abort(404)
      
-    session['oauth2_state'] = secrets.token_urlsafe(16)
+    session["oauth2_state"] = secrets.token_urlsafe(16)
 
     qs = urlencode({
-        'client_id': provider_data['client_id'],
-        'redirect_uri': url_for('oauth2_callback', provider=provider, _external=True),
-        'response_type': 'code',
-        'scope': ' '.join(provider_data['scopes']),
-        'state': session['oauth2_state'],
+        "client_id": provider_data["client_id"],
+        "redirect_uri": url_for("oauth2_callback", provider=provider, _external=True),
+        "response_type": "code",
+        "scope": " ".join(provider_data["scopes"]),
+        "state": session["oauth2_state"],
     })
 
     # redirect the user to the OAuth2 provider authorization URL
-    return redirect(provider_data['authorize_url'] + '?' + qs)
+    return redirect(provider_data["authorize_url"] + "?" + qs)
 
-@app.route('/callback/<provider>')
+@app.route("/callback/<provider>")
 def oauth2_callback(provider):
     user_not_anonymous()
-    provider_data = current_app.config['OAUTH2_PROVIDERS'].get(provider)
+    provider_data = current_app.config["OAUTH2_PROVIDERS"].get(provider)
     if provider_data is None:
         abort(404)
 
     # if there was an authentication error, flash the error messages and exit
-    if 'error' in request.args:
+    if "error" in request.args:
         for k, v in request.args.items():
-            if k.startswith('error'):
-                flash(f'{k}: {v}')
-        return redirect(url_for('index'))
+            if k.startswith("error"):
+                flash(f"{k}: {v}")
+        return redirect(url_for("index"))
 
     # make sure that the state parameter matches the one we created in the
     # authorization request
-    if request.args['state'] != session.get('oauth2_state'):
+    if request.args["state"] != session.get("oauth2_state"):
         abort(401)
 
     # make sure that the authorization code is present
-    if 'code' not in request.args:
+    if "code" not in request.args:
         abort(401)
 
     # exchange the authorization code for an access token
-    response_tokens = requests.post(provider_data['token_url'], data={
-        'client_id': provider_data['client_id'],
-        'client_secret': provider_data['client_secret'],
-        'code': request.args['code'],
-        'grant_type': 'authorization_code',
-        'redirect_uri': url_for('oauth2_callback', provider=provider, _external=True),
-    }, headers={'Accept': 'application/x-www-form-urlencoded'})
+    response_tokens = requests.post(provider_data["token_url"], data={
+        "client_id": provider_data["client_id"],
+        "client_secret": provider_data["client_secret"],
+        "code": request.args["code"],
+        "grant_type": "authorization_code",
+        "redirect_uri": url_for("oauth2_callback", provider=provider, _external=True),
+    }, headers={"Accept": "application/x-www-form-urlencoded"})
     if response_tokens.status_code != 200:
         abort(401)
-    oauth2_token = response_tokens.json().get('access_token')
+    oauth2_token = response_tokens.json().get("access_token")
     if not oauth2_token:
         abort(401)
 
-    # use the access token to get the user's information
+    # use the access token to get the user"s information
     response = requests.get("https://discord.com/api/users/@me", headers={
-        'Authorization': 'Bearer ' + oauth2_token,
-        'Accept': 'application/json',
+        "Authorization": "Bearer " + oauth2_token,
+        "Accept": "application/json",
     })
 
     if response.status_code != 200:
