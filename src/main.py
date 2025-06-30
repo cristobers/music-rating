@@ -60,6 +60,7 @@ def index():
         return render_template("index.html", albums=albums, ratings=ratings)
 
 @app.route("/logout")
+@login_required
 def logout():
     logout_user()
     #flash("you've been logged out")
@@ -71,6 +72,7 @@ def see_user_ratings(user_id):
     return "meowwwwwwww!"
 
 @app.route("/rate_album", methods=["POST"])
+@login_required
 def rate_an_album():
 
     if request.form == None:
