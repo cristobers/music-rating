@@ -1,0 +1,31 @@
+<!doctype html>
+{% if current_user.is_authenticated %}
+    <title> {% block title %}{% endblock %} - Album Rating</title>
+    <head> {% block head %}{% endblock %} </head>
+    <div>
+        <a> Hello <b>{{ current_user.username }}</b> | </a>
+        <a class="btn" href="{{ url_for('index') }}">home</a>
+        |
+        <a class="btn" href="{{ url_for('logout') }}">logout</a>
+    </div>
+    <hr>
+    <div>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for message in messages %}
+                        <li> {{ message }} </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    </div>
+    {% block content %}{% endblock %}
+{% else %}
+    <title> Login - Album Rating </title>
+    <a 
+        class="btn" 
+        href="{{ url_for('oauth2_authorize', provider='discord') }}">
+        login with discord
+    </a>
+{% endif %}

@@ -1,58 +1,54 @@
-<!DOCTYPE=html>
-    <head>
-        <style>
-            .album_rating_section {
-                box-sizing: border-box;
-                padding: 10px;
-                outline: 1px dashed black;
-            }
-        </style>
-    </head>
-    <body>
-        {% if current_user.is_authenticated %}
-            <div>
-                <a> Hello <b>{{ current_user.username }}</b> | </a>
-                <a class="btn" href="{{ url_for('logout') }}">logout</a>
-            </div>
+{% extends "base.html" %}
 
-            <div>
-                {% with messages = get_flashed_messages() %}
-                    {% if messages %}
-                        <ul class="flashes">
-                            {% for message in messages %}
-                                <li> {{ message }} </li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                {% endwith %}
-            </div>
+{% block head %}
+    <style>
+        .album_rating_section {
+            box-sizing: border-box;
+            padding: 10px;
+            outline: 1px dashed black;
+        }
+    </style>
+{% endblock %}
+<body>
+    {% block title %} Update ratings {% endblock %}
+    {% block content %}
+    <p> There are currently {{ albums|length }} albums in the database. </p>
 
-            <p> There are currently {{ albums|length }} albums in the database. </p>
+    <div class="album_rating_section">
+        <form method="post" action="/rate_album">
+            <label for="album">Album:<label>
+            <select name="album" id="album">
+                {% for album in albums %}
+                    <option value = "{{ album.title }}\0{{ album.artist }}">
+                        {{ album.title }} - {{ album.artist }}
+                    </option>
+                {% endfor %}
+            </select>
+            <br><br>
+            <label for="rating">Rating:</label>
+            <input type="number" id="rating" name="rating" min="0" max="100"></input>
+            <br><br>
+            <input type="submit" value="Submit">
+        </form>
+    </div>
+    <div class="your_ratings">
+        <p> You have rated {{ ratings|length }} songs. </p>
 
-            <div class="album_rating_section">
-                <form method="post" action="/rate_album">
-                    <label for="album">Album:<label>
-                    <select name="album" id="album">
-                        {% for album in albums %}
-                            <option value = "{{ album.title }}\0{{ album.artist }}">
-                                {{ album.title }} - {{ album.artist }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    <br><br>
-                    <label for="rating">Rating:</label>
-                    <input type="number" id="rating" name="rating" min="0" max="100"></input>
-                    <br><br>
-                    <input type="submit" value="Submit">
-                </form>
-            </div>
-            <div class="your_ratings">
-                <p> You have rated {{ ratings|length }} songs. </p>
-            </div>
+        <table style="width:50%">
+        <tr>
+            <th>Album</th>
+            <th>Rating</th>
+        </tr>
 
-
-        {% else %}
-            <a class="btn" href="{{ url_for('oauth2_authorize', provider='discord') }}">login with discord</a>
-        {% endif %}
-    </body>
-</html>
+        {% for rating in ratings %}
+            <tr>
+                {% set album  = rating[1] %}
+                {% set rating = rating[0] %}
+                <td> {{album.title}} - {{album.artist}} </td>
+                <td> {{rating.rating_score}} </td>
+            </tr>
+        {% endfor %}
+        <table>
+    </div>
+    {% endblock %}
+</body>

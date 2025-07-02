@@ -6,7 +6,7 @@ from flask import Flask, render_template, current_app, url_for, flash, session, 
 from flask_login import current_user, LoginManager, UserMixin, login_user, \
     logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import and_, Sequence
+from sqlalchemy import and_, Sequence, desc
 from config import app_setup, fer_key
 
 app = Flask(__name__)
@@ -53,28 +53,27 @@ def index():
         return render_template("index.html")
     else:
         albums = Album.query.all()
-        ratings = db.session.execute(
-                    db.select(Rating).where(and_(
-                        Rating.album_rater == current_user.id
-                    ))).all()
+        ratings = get_ordered_albums_and_ratings()
         return render_template("index.html", albums=albums, ratings=ratings)
 
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
-    #flash("you've been logged out")
     return redirect(url_for("index"))
 
 @app.route("/user/<user_id>")
 @login_required
 def see_user_ratings(user_id):
-    return "meowwwwwwww!"
+    ratings = get_ordered_albums_and_ratings()
+    if ratings == []:
+        return "User doesn't have any ratings.", 200
+    else:
+        return render_template("ratings.html", ratings=ratings, user_id=user_id)
 
 @app.route("/rate_album", methods=["POST"])
 @login_required
 def rate_an_album():
-
     if request.form == None:
         return "Request data was empty.", 400
 
@@ -236,6 +235,15 @@ def retrieve_token(token: bytes) -> str:
 def user_not_anonymous():
     if not current_user.is_anonymous:
         return redirect(url_for('index'))
+
+def get_ordered_albums_and_ratings():
+    return db.session.execute(
+        db.select(Rating, Album).join(
+            Album, Rating.album_id == Album.id
+        ).where(and_(
+            Rating.album_rater == current_user.id 
+        )).order_by(desc(Rating.rating_score))
+    ).all()
 
 with app.app_context():
     db.create_all()
