@@ -18,8 +18,6 @@ login.login_view = "index"
 key = fer_key
 fernet = Fernet(key)
 
-# https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask-in-2023
-
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id            = db.Column(db.String, primary_key=True)
