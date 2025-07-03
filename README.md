@@ -10,5 +10,18 @@ https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask-in-2023
 
 ## Setup
 
+Make a `secrets.json` file within `src` which contains the following:
+
+```json
+{
+    "app_secret_key": "secret key for flask",
+    "client_id": "client id of discord oauth2",
+    "client_secret": "client secret of discord oauth2" 
+    "fernet_key": "a key for salting the db with fernet"
+}
+```
+
 Make a `venv` and install all of the packages from the `requirements.txt` within it,
 then `bash start.sh` to start the flask web server.
+
+
