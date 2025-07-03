@@ -1,7 +1,10 @@
 import json, base64
 from flask import Flask
 
-with open("/home/cris/music-rating/src/secrets.json", "r") as f:
+PATH_TO_SECRETS = ""
+assert PATH_TO_SECRETS != "", "Add the path to your secrets.json to PATH_TO_SECRETS."
+
+with open(PATH_TO_SECRETS, "r") as f:
     f = json.loads(f.read())
     a_sk = f["app_secret_key"]
     c_id = f["client_id"]
@@ -9,7 +12,6 @@ with open("/home/cris/music-rating/src/secrets.json", "r") as f:
     fer_key  = f["fernet_key"]
 
 def app_setup(app):
-    # TODO: hide these in the future bc this sucks
     app.secret_key = a_sk
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
     app.config['OAUTH2_PROVIDERS'] = {
