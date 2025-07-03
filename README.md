@@ -23,8 +23,3 @@ Make a `secrets.json` file within `src` which contains the following:
     "fernet_key": "a key for salting the db with fernet"
 }
 ```
-
-### Running
-
-Make a `venv` and install all of the packages from the `requirements.txt` within it,
-then `bash start.sh` to start the flask web server.

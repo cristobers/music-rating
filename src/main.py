@@ -114,6 +114,7 @@ def rate_an_album():
         # Score was empty
         abort(400)
 
+    # TODO: This should only ever return one_or_none
     prev_rated_album = db.session.execute(
         db.select(Rating, Album).join(
             Album, Rating.album_id == Album.id
