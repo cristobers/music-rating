@@ -23,3 +23,5 @@ Make a `secrets.json` file within `src` which contains the following:
     "fernet_key": "a key for salting the db with fernet"
 }
 ```
+
+Add the path to this file to `src/config.py` in the `PATH_TO_SECRETS` variable.
