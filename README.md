@@ -1,6 +1,7 @@
 # Music rating website
 
-Allows users to rate music that they've listened to.
+Allows users to login with Discord through Oauth2 and rate music that they've listened 
+to.
 
 ## Oauth2 implementation
 
@@ -9,6 +10,8 @@ can be found at this blog post:
 https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask-in-2023
 
 ## Setup
+
+### Secrets
 
 Make a `secrets.json` file within `src` which contains the following:
 
@@ -21,7 +24,7 @@ Make a `secrets.json` file within `src` which contains the following:
 }
 ```
 
+### Running
+
 Make a `venv` and install all of the packages from the `requirements.txt` within it,
 then `bash start.sh` to start the flask web server.
-
-
