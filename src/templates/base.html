@@ -3,10 +3,12 @@
     <title> {% block title %}{% endblock %} - Album Rating</title>
     <head> {% block head %}{% endblock %} </head>
     <div>
-        <a> Hello <b>{{ current_user.username }}</b> | </a>
+        <a> Hello <b>{{ current_user.username }}</b> </a>
+        |
         <a class="btn" href="{{ url_for('index') }}">home</a>
         |
         <a class="btn" href="{{ url_for('logout') }}">logout</a>
+        |
     </div>
     <hr>
     <div>

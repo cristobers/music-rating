@@ -64,12 +64,33 @@ def logout():
 
 @app.route("/user/<user_id>")
 @login_required
-def see_user_ratings(user_id):
-    ratings = get_ordered_albums_and_ratings()
+def see_user_ratings(user_id, methods=["GET"]):
+    username_given = False
+    if len(user_id) != 17:
+        username_given = True
+        user_id = db.session.execute(
+                db.select(User).where(
+                    User.username == user_id
+                )).one_or_none()
+        if user_id == None:
+            return "No user found with this username.", 400
+        username = user_id[0].username
+        user_id = user_id[0].id
+    ratings = db.session.execute(
+        db.select(Rating, Album).join(
+            Album, Rating.album_id == Album.id
+        ).where(and_(
+            Rating.album_rater == user_id
+        )).order_by(desc(Rating.rating_score))
+    ).all()
     if ratings == []:
-        return "User doesn't have any ratings.", 200
+        return "User doesn't have any ratings.", 400
     else:
-        return render_template("ratings.html", ratings=ratings, user_id=user_id)
+        if username_given:
+            return render_template("ratings.html", ratings=ratings, user_id=username)
+        else:
+            return render_template("ratings.html", ratings=ratings, user_id=user_id)
+
 
 @app.route("/rate_album", methods=["POST"])
 @login_required
