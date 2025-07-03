@@ -64,7 +64,7 @@ def logout():
 @login_required
 def see_user_ratings(user_id, methods=["GET"]):
     username_given = False
-    if len(user_id) != 17:
+    if len(user_id) <= 18 and not user_id.isdigit():
         username_given = True
         user_id = db.session.execute(
                 db.select(User).where(
@@ -74,6 +74,7 @@ def see_user_ratings(user_id, methods=["GET"]):
             return "No user found with this username.", 400
         username = user_id[0].username
         user_id = user_id[0].id
+
     ratings = db.session.execute(
         db.select(Rating, Album).join(
             Album, Rating.album_id == Album.id
@@ -81,6 +82,7 @@ def see_user_ratings(user_id, methods=["GET"]):
             Rating.album_rater == user_id
         )).order_by(desc(Rating.rating_score))
     ).all()
+
     if ratings == []:
         return "User doesn't have any ratings.", 400
     else:
@@ -88,7 +90,6 @@ def see_user_ratings(user_id, methods=["GET"]):
             return render_template("ratings.html", ratings=ratings, user_id=username)
         else:
             return render_template("ratings.html", ratings=ratings, user_id=user_id)
-
 
 @app.route("/rate_album", methods=["POST"])
 @login_required
@@ -113,7 +114,6 @@ def rate_an_album():
         # Score was empty
         abort(400)
 
-    # TODO: If we've previously rated the album, update the entry instead of making a new one
     prev_rated_album = db.session.execute(
         db.select(Rating, Album).join(
             Album, Rating.album_id == Album.id

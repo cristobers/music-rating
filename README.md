@@ -4,7 +4,8 @@ Allows users to rate music that they've listened to.
 
 ## Oauth2 implementation
 
-The implementation of Oauth2 used in this project is largely lifted from this blog post:
+Thank you Miguel Grinberg for the implementation of Oauth2 used in this project which 
+can be found at this blog post: 
 https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask-in-2023
 
 ## Setup
