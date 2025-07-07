@@ -30,3 +30,4 @@ Make a `secrets.json` file within `src` which contains the following:
 ```
 
 Add the path to this file to `src/config.py` in the `PATH_TO_SECRETS` variable.
+Make a `venv` and add all of the libraries from `requirements.txt`, host accordingly.
