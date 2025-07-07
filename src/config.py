@@ -1,8 +1,7 @@
 import json, base64
 from flask import Flask
 
-PATH_TO_SECRETS = "/home/cris/music-rating/src/secrets.json"
-assert PATH_TO_SECRETS != "", "Add the path to your secrets.json to PATH_TO_SECRETS."
+PATH_TO_SECRETS = "src/secrets.json"
 
 with open(PATH_TO_SECRETS, "r") as f:
     f = json.loads(f.read())
