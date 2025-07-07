@@ -1,7 +1,7 @@
 import json, base64
 from flask import Flask
 
-PATH_TO_SECRETS = ""
+PATH_TO_SECRETS = "/home/cris/music-rating/src/secrets.json"
 assert PATH_TO_SECRETS != "", "Add the path to your secrets.json to PATH_TO_SECRETS."
 
 with open(PATH_TO_SECRETS, "r") as f:
@@ -10,6 +10,7 @@ with open(PATH_TO_SECRETS, "r") as f:
     c_id = f["client_id"]
     c_secret = f["client_secret"]
     fer_key  = f["fernet_key"]
+    allowed_servers = f["allowed_servers"]
 
 def app_setup(app):
     app.secret_key = a_sk
@@ -23,7 +24,7 @@ def app_setup(app):
             'userinfo': {
                 'url': 'https://discord.com/oauth2/@me',
             },
-            'scopes': ['identify']
+            'scopes': ['identify', 'guilds']
         }
     }
     return app

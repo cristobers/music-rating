@@ -7,7 +7,7 @@ from flask_login import current_user, LoginManager, UserMixin, login_user, \
     logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_, Sequence, desc
-from config import app_setup, fer_key
+from config import app_setup, fer_key, allowed_servers
 
 app = Flask(__name__)
 app = app_setup(app)
@@ -114,7 +114,6 @@ def rate_an_album():
         # Score was empty
         abort(400)
 
-    # TODO: This should only ever return one_or_none
     prev_rated_album = db.session.execute(
         db.select(Rating, Album).join(
             Album, Rating.album_id == Album.id
@@ -123,10 +122,9 @@ def rate_an_album():
             Album.artist == artist,
             Rating.album_rater == current_user.id
         ))
-    ).all()
+    ).one_or_none()
 
-    if prev_rated_album == []:
-        # We havent previously rated this album, just insert it.
+    if prev_rated_album == None:
         temp_rating = Rating(
             album_id     = albums[0].id,
             album_rater  = current_user.id,
@@ -137,7 +135,7 @@ def rate_an_album():
         flash(f"Successfully rated {album} by {artist}")
         return redirect(url_for("index"))
     else:
-        prev_rated_album_id = prev_rated_album[0][1].id
+        prev_rated_album_id = prev_rated_album[1].id
         db.session.execute(
             db.update(Rating)
             .where(and_(
@@ -208,6 +206,9 @@ def oauth2_callback(provider):
     if not oauth2_token:
         abort(401)
 
+    if is_user_allowed(oauth2_token) == False:
+        abort(401)
+
     # use the access token to get the user"s information
     response = requests.get("https://discord.com/api/users/@me", headers={
         "Authorization": "Bearer " + oauth2_token,
@@ -256,6 +257,20 @@ def user_not_anonymous():
     if not current_user.is_anonymous:
         return redirect(url_for('index'))
 
+def is_user_allowed(oauth2_token):
+    response = requests.get("https://discord.com/api/users/@me/guilds", headers={
+        "Authorization": "Bearer " + oauth2_token,
+        "Accept": "application/json",
+    })
+
+    if response.status_code != 200:
+        abort(400)
+
+    for server in response.json():
+        if server["id"] in allowed_servers:
+            return True
+    return False
+
 def get_ordered_albums_and_ratings():
     return db.session.execute(
         db.select(Rating, Album).join(
@@ -265,5 +280,6 @@ def get_ordered_albums_and_ratings():
         )).order_by(desc(Rating.rating_score))
     ).all()
 
-with app.app_context():
-    db.create_all()
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
