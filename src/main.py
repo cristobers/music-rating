@@ -280,6 +280,8 @@ def get_ordered_albums_and_ratings():
         )).order_by(desc(Rating.rating_score))
     ).all()
 
+"""
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+"""
