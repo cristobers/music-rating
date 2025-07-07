@@ -2,10 +2,13 @@
 
 ## Why this exists
 
-Discord puts a hard limit on the amount of variables you can have on a single command, 
+This was made for a small group of friends who host an album club in which they listen 
+to and rate albums.
+
+Discord puts a hard limit on the amount of variables you can have on a single bot command, 
 after trying to put as much information into a single command, we have reached the limit.
 This Flask application was made to allow for more verbose rating of albums, without
-having to worry about Discords imposed bot command limitations.
+having to worry about Discords imposed bot command limits.
 
 ## Oauth2 implementation
 
