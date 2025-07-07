@@ -13,6 +13,7 @@ with open(PATH_TO_SECRETS, "r") as f:
 
 def app_setup(app):
     app.secret_key = a_sk
+    app.jinja_options["autoescape"] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
     app.config['OAUTH2_PROVIDERS'] = {
         'discord': {
