@@ -1,9 +1,28 @@
 <!doctype html>
+
+{% macro ratings_table(ratings) -%}
+        <table style="width:50%; border:1px solid black;">
+        <tr>
+            <th>Album</th>
+            <th>Rating</th>
+        </tr>
+
+        {% for rating in ratings %}
+            <tr>
+                {% set album  = rating[1] %}
+                {% set rating = rating[0] %}
+                <td> {{album.title}} - {{album.artist}} </td>
+                <td> {{rating.rating_score}} </td>
+            </tr>
+        {% endfor %}
+        </table>
+{%- endmacro %}
+
 {% if current_user.is_authenticated %}
     <title> {% block title %}{% endblock %} - Album Rating</title>
     <head> {% block head %}{% endblock %} </head>
     <div>
-        <a> Hello <b>{{ current_user.username }}</b> </a>
+        <a> Hello <b>{{ current_user.username|e }}</b> </a>
         |
         <a class="btn" href="{{ url_for('index') }}">home</a>
         |
