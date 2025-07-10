@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %} Add an album {% endblock %}
+{% block content %}
+<form method="post" action="/add_album">
+    <label for="album_name">Album title:</label>
+    <input type="text" id="album_title" name="album_title"><br><br>
+
+    <label for="album_name">Artist name:</label>
+    <input type="text" id="artist_name" name="artist_name"><br><br>
+
+    <label for="album_name">Date added:</label>
+    <input type="text" id="date_added" name="date_added"><br><br>
+
+    <input type="submit" value="Submit">
+</form>
+{% endblock %}

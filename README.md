@@ -24,6 +24,7 @@ Make a `secrets.json` file within `src` which contains the following:
 
 ```json
 {
+    "admins": ["array of discord users who can add albums to the db"],
     "allowed_servers": ["array of discord server ids allowed to login"],
     "app_secret_key": "secret key for flask",
     "client_id": "client id of discord oauth2",

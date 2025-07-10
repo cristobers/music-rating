@@ -7,7 +7,7 @@ from flask_login import current_user, LoginManager, UserMixin, login_user, \
     logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_, Sequence, desc
-from config import app_setup, fer_key, allowed_servers
+from config import app_setup, fer_key, allowed_servers, admins
 
 app = Flask(__name__)
 app = app_setup(app)
@@ -59,6 +59,30 @@ def index():
 def logout():
     logout_user()
     return redirect(url_for("index"))
+
+@app.route("/add_album", methods=["GET", "POST"])
+@login_required
+def add_an_album():
+
+    # TODO: check if user is allowed to be on this page.
+    if current_user.id not in admins:
+        return "You can't view this page sorry", 400
+
+    if request.method == "GET":
+        return render_template("add_album.html")
+    elif request.method == "POST":
+        # Do we have values for all the fields
+        for elem in request.form.values():
+            if elem == '':
+                return "Empty form input.", 400
+        temp_album = Album(
+            title  = request.form["album_title"],
+            artist = request.form["artist_name"],
+            date   = request.form["date_added"],
+        )
+        db.session.add(temp_album)
+        db.session.commit()
+        return redirect(url_for("add_an_album"))
 
 @app.route("/user/<user_id>")
 @login_required
@@ -207,7 +231,7 @@ def oauth2_callback(provider):
         abort(401)
 
     if is_user_allowed(oauth2_token) == False:
-        abort(401)
+        return "Sorry, you're not allowed to view this webpage", 401
 
     # use the access token to get the user"s information
     response = requests.get("https://discord.com/api/users/@me", headers={
@@ -280,8 +304,6 @@ def get_ordered_albums_and_ratings():
         )).order_by(desc(Rating.rating_score))
     ).all()
 
-"""
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-"""
